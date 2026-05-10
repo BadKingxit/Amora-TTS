@@ -2,11 +2,19 @@ import torch
 import torchaudio as ta
 from chatterbox.tts import ChatterboxTTS
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+model = None
 
-model = ChatterboxTTS.from_pretrained(device=device)
+def get_model():
+    global model
+
+    if model is None:
+        model = ChatterboxTTS.from_pretrained(device="cpu")
+
+    return model
 
 def generate_tts(text, speaker, output):
+    model = get_model()
+
     wav = model.generate(
         text=text,
         audio_prompt_path=speaker

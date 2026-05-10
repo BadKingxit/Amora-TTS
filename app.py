@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.routes.tts import router as tts_router
 import uvicorn
+import os
 
 app = FastAPI(
     title="Amora-TTS",
@@ -16,9 +17,15 @@ async def root():
         "service": "Amora-TTS"
     }
 
+@app.get("/health")
+async def health():
+    return {
+        "status": "healthy"
+    }
+
 if __name__ == "__main__":
     uvicorn.run(
         "app:app",
         host="0.0.0.0",
-        port=10000
+        port=int(os.environ.get("PORT", 8080))
     )

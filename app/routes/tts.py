@@ -11,6 +11,9 @@ async def tts(
     text: str = Form(...),
     audio: UploadFile = File(...)
 ):
+    os.makedirs("temp", exist_ok=True)
+    os.makedirs("outputs", exist_ok=True)
+
     temp_voice = f"temp/{uuid.uuid4()}.wav"
     output_file = f"outputs/{uuid.uuid4()}.wav"
 
