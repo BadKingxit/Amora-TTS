@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-multipart
+torch
+torchaudio
+numpy
+soundfile
+huggingface_hub
+git+https://github.com/resemble-ai/chatterbox.git
