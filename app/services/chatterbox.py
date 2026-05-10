@@ -1,6 +1,4 @@
-import torch
 import torchaudio as ta
-from chatterbox.tts import ChatterboxTTS
 
 model = None
 
@@ -8,7 +6,11 @@ def get_model():
     global model
 
     if model is None:
-        model = ChatterboxTTS.from_pretrained(device="cpu")
+        from chatterbox.tts import ChatterboxTTS
+
+        model = ChatterboxTTS.from_pretrained(
+            device="cpu"
+        )
 
     return model
 
