@@ -1,4 +1,7 @@
 import os
+
+os.environ["COQUI_TOS_AGREED"] = "true"
+
 import gc
 import torch
 import traceback
@@ -10,7 +13,6 @@ from TTS.api import TTS
 
 print("=== STARTING SERVER ===")
 
-os.environ["COQUI_TOS_AGREED"] = "1"
 
 torch.set_num_threads(1)
 

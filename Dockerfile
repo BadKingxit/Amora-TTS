@@ -16,5 +16,6 @@ COPY . .
 
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
+ENV COQUI_TOS_AGREED=true
 
 CMD uvicorn main:app --host 0.0.0.0 --port $PORT
