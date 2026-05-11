@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo "=============================="
+echo "INICIANDO XTTS V2 API"
+echo "=============================="
+
+uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080} --log-level debug

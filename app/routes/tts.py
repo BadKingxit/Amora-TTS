@@ -1,67 +1,34 @@
 from fastapi import APIRouter, UploadFile, File, Form
-from fastapi.responses import FileResponse, JSONResponse
-from app.services.chatterbox import generate_tts
-import uuid
+from fastapi.responses import FileResponse
+from app.services.tts_service import generate_tts
+import tempfile
+import shutil
 import os
-import traceback
 
 router = APIRouter()
-
-def log(msg):
-    print(f"[TTS-ROUTE] {msg}", flush=True)
 
 @router.post("/tts")
 async def tts(
     text: str = Form(...),
     audio: UploadFile = File(...)
 ):
-    try:
-        log("Nova request recebida")
+    temp_dir = tempfile.mkdtemp()
 
-        os.makedirs("temp", exist_ok=True)
-        os.makedirs("outputs", exist_ok=True)
+    speaker_path = os.path.join(temp_dir, "speaker.wav")
 
-        temp_voice = f"temp/{uuid.uuid4()}.wav"
-        output_file = f"outputs/{uuid.uuid4()}.wav"
+    with open(speaker_path, "wb") as buffer:
+        shutil.copyfileobj(audio.file, buffer)
 
-        log(f"Temp voice: {temp_voice}")
-        log(f"Output file: {output_file}")
+    output_path = os.path.join(temp_dir, "output.wav")
 
-        content = await audio.read()
+    generate_tts(
+        text=text,
+        speaker_wav=speaker_path,
+        output_path=output_path
+    )
 
-        log(f"Audio size: {len(content)} bytes")
-
-        with open(temp_voice, "wb") as f:
-            f.write(content)
-
-        log("Arquivo temporário salvo")
-
-        generate_tts(
-            text=text,
-            speaker=temp_voice,
-            output=output_file
-        )
-
-        log("generate_tts concluído")
-
-        os.remove(temp_voice)
-
-        log("Arquivo temporário removido")
-
-        return FileResponse(
-            output_file,
-            media_type="audio/wav",
-            filename="tts.wav"
-        )
-
-    except Exception as e:
-        log("ERRO NA ROTA /tts")
-        log(str(e))
-        traceback.print_exc()
-
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": str(e)
-            }
-        )
+    return FileResponse(
+        output_path,
+        media_type="audio/wav",
+        filename="tts.wav"
+    )
