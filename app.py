@@ -1,6 +1,6 @@
 import os
 
-os.environ["COQUI_TOS_AGREED"] = "true"
+os.environ["COQUI_TOS_AGREED"] = "1"
 
 import gc
 import torch
@@ -9,12 +9,8 @@ import tempfile
 
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse, JSONResponse
-from TTS.api import TTS
 
-print("=== STARTING SERVER ===")
-
-
-torch.set_num_threads(1)
+print("=== SERVER STARTING ===")
 
 app = FastAPI()
 
@@ -22,7 +18,7 @@ tts = None
 
 MODEL_NAME = "tts_models/multilingual/multi-dataset/xtts_v2"
 
-print("=== CONFIG READY ===")
+print("=== SERVER READY ===")
 
 
 @app.get("/")
@@ -34,11 +30,15 @@ def load_model():
     global tts
 
     if tts is None:
-        print("=== LOADING XTTS MODEL ===")
+        print("=== IMPORTANDO TTS ===")
+
+        from TTS.api import TTS
+
+        print("=== CARREGANDO XTTS ===")
 
         tts = TTS(MODEL_NAME).to("cpu")
 
-        print("=== MODEL LOADED ===")
+        print("=== XTTS CARREGADO ===")
 
     return tts
 
@@ -49,7 +49,7 @@ async def generate_tts(
     audio: UploadFile = File(...)
 ):
     try:
-        print("=== REQUEST RECEIVED ===")
+        print("=== REQUEST RECEBIDA ===")
 
         model = load_model()
 
@@ -57,11 +57,9 @@ async def generate_tts(
             ref.write(await audio.read())
             ref_path = ref.name
 
-        print(f"=== REF SAVED: {ref_path} ===")
-
         output_path = tempfile.mktemp(suffix=".wav")
 
-        print("=== STARTING GENERATION ===")
+        print("=== GERANDO AUDIO ===")
 
         model.tts_to_file(
             text=text,
@@ -70,7 +68,7 @@ async def generate_tts(
             file_path=output_path
         )
 
-        print("=== GENERATION DONE ===")
+        print("=== AUDIO GERADO ===")
 
         gc.collect()
 
@@ -81,7 +79,7 @@ async def generate_tts(
         )
 
     except Exception as e:
-        print("=== ERROR ===")
+        print("=== ERRO ===")
         traceback.print_exc()
 
         return JSONResponse(
