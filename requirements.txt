@@ -4,6 +4,4 @@ python-multipart
 TTS==0.22.0
 torch==2.2.2
 torchaudio==2.2.2
-soundfile
-numpy
-scipy
+numpy==1.26.4

@@ -1,55 +1,90 @@
-from fastapi import FastAPI
-from app.routes.tts import router as tts_router
-import uvicorn
 import os
+import gc
+import torch
 import traceback
+import tempfile
 
-print("[BOOT] app.py iniciado", flush=True)
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.responses import FileResponse, JSONResponse
+from TTS.api import TTS
 
-app = FastAPI(
-    title="Amora-TTS",
-    version="1.0.0"
-)
+print("=== STARTING SERVER ===")
 
-print("[BOOT] Registrando router", flush=True)
+os.environ["COQUI_TOS_AGREED"] = "1"
 
-app.include_router(tts_router)
+torch.set_num_threads(1)
+
+app = FastAPI()
+
+tts = None
+
+MODEL_NAME = "tts_models/multilingual/multi-dataset/xtts_v2"
+
+print("=== CONFIG READY ===")
+
 
 @app.get("/")
 async def root():
-    print("[ROUTE] / chamada", flush=True)
+    return {"status": "online"}
 
-    return {
-        "status": "online",
-        "service": "Amora-TTS"
-    }
 
-@app.get("/health")
-async def health():
-    print("[ROUTE] /health chamada", flush=True)
+def load_model():
+    global tts
 
-    return {
-        "status": "healthy"
-    }
+    if tts is None:
+        print("=== LOADING XTTS MODEL ===")
 
-@app.on_event("startup")
-async def startup_event():
-    print("[BOOT] FastAPI startup completo", flush=True)
+        tts = TTS(MODEL_NAME).to("cpu")
 
-if __name__ == "__main__":
+        print("=== MODEL LOADED ===")
+
+    return tts
+
+
+@app.post("/tts")
+async def generate_tts(
+    text: str = Form(...),
+    audio: UploadFile = File(...)
+):
     try:
-        port = int(os.environ.get("PORT", 8080))
+        print("=== REQUEST RECEIVED ===")
 
-        print(f"[BOOT] Iniciando uvicorn na porta {port}", flush=True)
+        model = load_model()
 
-        uvicorn.run(
-            "app:app",
-            host="0.0.0.0",
-            port=port,
-            log_level="debug"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as ref:
+            ref.write(await audio.read())
+            ref_path = ref.name
+
+        print(f"=== REF SAVED: {ref_path} ===")
+
+        output_path = tempfile.mktemp(suffix=".wav")
+
+        print("=== STARTING GENERATION ===")
+
+        model.tts_to_file(
+            text=text,
+            speaker_wav=ref_path,
+            language="pt",
+            file_path=output_path
+        )
+
+        print("=== GENERATION DONE ===")
+
+        gc.collect()
+
+        return FileResponse(
+            output_path,
+            media_type="audio/wav",
+            filename="tts.wav"
         )
 
     except Exception as e:
-        print("[FATAL] ERRO AO INICIAR UVICORN", flush=True)
-        print(str(e), flush=True)
+        print("=== ERROR ===")
         traceback.print_exc()
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": str(e)
+            }
+        )
